@@ -1,25 +1,17 @@
 import {initializeBlock, useBase, useRecords, useWatchable, useCursor, useLoadable} from '@airtable/blocks/ui';
 import React from 'react';
 
-let indice = 0;
+let indice = 0;     // La definimos de forma global para interactuar con ella en ambas funciones.
 /**
  * Esta función se encarga de averiguar el índice numérico de la fila
- * en la que está la celda seleccionada. La única forma de momento que he encontrado
- * es haciendo un bucle y repasando todas las filas. 
- * Si encuentro alguna otra forma lo haré más directo
+ * en la que está la celda seleccionada. El array "records" contiene la información
+ * de todas las filas de la tabla.
  * @param {string} idRecord 
  * @param {array} records 
  */
 function SituarRecord(idRecord, records) {
-    indice = 0;
-    let filaObtenida = false;   //Forma sencilla de no modificar el índice una vez se encuentra
-    records.forEach(record => {
-        if (record.id == idRecord) {
-            filaObtenida = true;
-        }else if (filaObtenida == false) {
-            indice++;
-        }
-    });
+    let filaEncontrada = records.findIndex(record => record.id == idRecord);
+    indice = filaEncontrada;
 }
 
 /**
