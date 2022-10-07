@@ -1,4 +1,4 @@
-import {initializeBlock, useBase, useRecords, useWatchable, useCursor} from '@airtable/blocks/ui';
+import {initializeBlock, useBase, useRecords, useWatchable, useCursor, useLoadable} from '@airtable/blocks/ui';
 import React from 'react';
 
 /*
@@ -101,28 +101,61 @@ function pruebaAlgodon() {
 */
 
 //Primer palo de ciego
+/*
 function ActiveView() {
     let cursor = useCursor();
     let base = useBase();
     let table = base.tables[0];
-    //let queryResult = table.selectRecords();
     let records = useRecords(table);
+    useWatchable(records[4]._data.cellValuesByFieldId[0], 'id', () => {
+        alert('value changed!!!')
+   });
     useWatchable(cursor, 'selectedRecordIds', () => {
         records.forEach(record => {
             cursor.selectedRecordIds.forEach(idVigilado => {
                 if (record.id == idVigilado) {
-                    
-                    record.watch("name", function () {
-                        alert('Valor cambiado de');console.log(record.id);
-                    });
-                    record.unwatch();
+                    console.log(Object.keys(records[4]._data.cellValuesByFieldId));
+                if (cursor.selectedRecordIds == "recIiQpAX52jN5RQa" && records[4].id == "recIiQpAX52jN5RQa") {
+                    records[4].watch(records[4].id, function () {
+                        alert("Valor cambiado de ${oldValue} yo ${newValue}");
+                    });//);
+                    records[4].unwatch();
+                }
                 } 
             });
-            //
         }); 
     });
     
     return <span>No existen cambios</span>
 }
+*/
+/*
+function VigilarCambios() {
+    let base = useBase();
+    let tabla = base.tables[0];
+    let cursor = useCursor();
+    let texto = useLoadable(cursor);
+    console.log(texto);
+    //let texto = "No hemos registrado cambios.";
+    useWatchable(cursor, 'selectedRecordIds', () => {
+        return <span>${texto}</span>
+    });
+    return <span>No hemos registrado cambios.</span>
+}
+*/
+function Seleccionado() {
+    const cursor = useCursor();
+    useLoadable(cursor);
+    useWatchable(cursor, ['selectedFieldIds', 'selectedRecordIds']);
+    const records = useCursor();
+    useLoadable(records);
+    let records.watch('cellValues', );
+    useWatchable(records, ['cellValues']);
+    return <div>
+        <p>Selected record: {cursor.selectedRecordIds.join(', ')}</p>
+        <p>Selected field: {cursor.selectedFieldIds.join(', ')}</p>
+        <p>Valor cambiado: {records.watch}</p>
+    </div>;
+}
 
-initializeBlock(() => <ActiveView/>);
+initializeBlock(() => <Seleccionado/>);
