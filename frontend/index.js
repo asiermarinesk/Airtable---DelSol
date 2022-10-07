@@ -144,17 +144,33 @@ function VigilarCambios() {
 }
 */
 function Seleccionado() {
+    let base = useBase();
+    let table = base.tables[0];
+    let records = useRecords(table);
     const cursor = useCursor();
     useLoadable(cursor);
     useWatchable(cursor, ['selectedFieldIds', 'selectedRecordIds']);
-    const records = useCursor();
+    console.log(cursor.selectedRecordIds);
+    if (!cursor.selectedRecordIds || !cursor.selectedFieldIds) {
+        return <span>No hay valores seleccionados</span>
+    }else{
+        useWatchable(records[4], ['cellValues']);
+        return <span>
+            The record has cell value {records[4].getCellValue(cursor.selectedFieldIds)} in {cursor.selectedFieldIds}
+        </span>
+    }
+    
+    const cursorValor = useCursor();
     useLoadable(records);
-    let records.watch('cellValues', );
-    useWatchable(records, ['cellValues']);
+    cursorValor.watch('cellValues', function () {
+        return <div>
+            <p>Valor cambiado</p>
+        </div>
+    });
+    useWatchable(cursorValor, ['cellValues']);
     return <div>
         <p>Selected record: {cursor.selectedRecordIds.join(', ')}</p>
         <p>Selected field: {cursor.selectedFieldIds.join(', ')}</p>
-        <p>Valor cambiado: {records.watch}</p>
     </div>;
 }
 
