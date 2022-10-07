@@ -1,7 +1,7 @@
 import {initializeBlock, useBase, useRecords, useWatchable, useCursor, useLoadable} from '@airtable/blocks/ui';
 import React from 'react';
 
-/*
+/* hola
 function NombreBD() {
     const base = useBase("DatosPokemon");
     return <div>{base.name}</div>;
