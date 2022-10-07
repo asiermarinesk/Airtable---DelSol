@@ -1,5 +1,5 @@
-import {initializeBlock, useBase, useRecords, useWatchable, useCursor, useLoadable} from '@airtable/blocks/ui';
-import React from 'react';
+import {initializeBlock, useBase, useRecords, useWatchable, useCursor, useLoadable, Select} from '@airtable/blocks/ui';
+import React, { useEffect, useState, usePrevious } from 'react';
 
 let indice = 0;     // La definimos de forma global para interactuar con ella en ambas funciones.
 /**
@@ -27,15 +27,62 @@ function Seleccionado() {
     const cursor = useCursor();
     useLoadable(cursor);
     useWatchable(cursor, ['selectedFieldIds', 'selectedRecordIds']);
+    SituarRecord(cursor.selectedRecordIds, records);
+    console.log(indice);
+    /*onst [dato, setDato] = useState("");
+    const datoViejo = usePrevious(dato);
+    const [fila, setFila] = useState(indice);
+    const [columna, setColumna] = useState("");
+    useEffect(() => {
+        return <span>
+            Has cambiado el valor a {dato} en la fila {fila} y la columna {columna}
+        </span>
+    }, dato);
+    console.log(records[indice]);
+   records[indice].watch("Prueba", function() {
+        setDato(records[indice].getCellValue(cursor.selectedFieldIds));
+    });*/
     if (cursor.selectedRecordIds.length ==  0 || cursor.selectedFieldIds.length == 0) {
         return <span>No hay valores seleccionados</span>
+    }else if(cursor.selectedRecordIds.length > 1 || cursor.selectedFieldIds.length > 1){
+        return <span>Has hecho una selección múltiple. Elige un único campo a modificar</span>
     }else{
-        SituarRecord(cursor.selectedRecordIds, records);
         return <span>
             The record has cell value {records[indice].getCellValue(cursor.selectedFieldIds)} in {cursor.selectedFieldIds}
         </span>
     }
 }
+const options = [
+    { value: "Apple", label: "Apple" },
+    { value: "Pear", label: "Pear" },
+    { value: "Banana", label: "Banana" }
+];
+const SelectExample = () => {
+    const [value, setValue] = useState(options[0].value);
+    return (
+        <Select
+        options={options}
+        value={value}
+        onChange={newValue => setValue(newValue)}
+        width="320px"
+        />
+    );
+};
+
+function Example() {
+    // Declare a new state variable, which we'll call "count"
+    const [count, setCount] = useState(0);
+  
+    return (
+      <div>
+        <p>You clicked {count} times</p>
+        <button onClick={() => setCount(count + 1)}>
+          Click me
+        </button>
+      </div>
+    );
+  }
+
 /*
         APUNTES DE POSIBLE INTERÉS
 
