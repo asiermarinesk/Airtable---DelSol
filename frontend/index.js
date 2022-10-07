@@ -143,6 +143,18 @@ function VigilarCambios() {
     return <span>No hemos registrado cambios.</span>
 }
 */
+function SituarRecord(idRecord, records) {
+    let indice = 0;
+    records.forEach(record => {
+        if (record.id == idRecord) {
+            console.log(indice);
+            return indice;
+        }else{
+            indice++;
+        }
+    });
+    return "";
+}
 function Seleccionado() {
     let base = useBase();
     let table = base.tables[0];
@@ -150,13 +162,13 @@ function Seleccionado() {
     const cursor = useCursor();
     useLoadable(cursor);
     useWatchable(cursor, ['selectedFieldIds', 'selectedRecordIds']);
-    console.log(cursor.selectedRecordIds);
-    if (!cursor.selectedRecordIds || !cursor.selectedFieldIds) {
+    console.log(records);
+    if (cursor.selectedRecordIds.length ==  0 || cursor.selectedFieldIds.length == 0) {
         return <span>No hay valores seleccionados</span>
     }else{
-        useWatchable(records[4], ['cellValues']);
+        console.log(cursor.selectedFieldIds[0]);
         return <span>
-            The record has cell value {records[4].getCellValue(cursor.selectedFieldIds)} in {cursor.selectedFieldIds}
+            The record has cell value {records[Number(SituarRecord(cursor.selectedRecordIds, records))].getCellValue(cursor.selectedFieldIds[0])} in {cursor.selectedFieldIds[0]}
         </span>
     }
     
