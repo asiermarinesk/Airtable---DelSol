@@ -6,11 +6,13 @@ import React from 'react';
 // "verificacionConexionDelSol" guardará el token de acceso a la API para las consultas.
 // "respuestaConsulta" guarda la información de retorno de las consultas que ejecutamos a la API.
 // "numRecords" se encarga de verificar junto con el length de records que se ha añadido una fila.
+// Ya que no podemos encapsular en condicionales los hooks, "interruptorEnvio" se encarga de entrar al condicional por él.
 let indice = 0;     
 let datosEnviar = "";
 let verificacionConexionDelSol = null;
 let respuestaConsulta = null;
 let numRecords = 0;
+let interruptorEnvio = false;
 
 /**
  * Esta función se encarga de averiguar el índice numérico de la fila
@@ -35,6 +37,7 @@ function VisualizarUltimo(table) {
         {field: 'Last Modified', direction: 'desc'}
      ]});
     datosEnviar = ultimosRecords[0];
+    console.log(datosEnviar);
 }
 
 /**
@@ -43,29 +46,29 @@ function VisualizarUltimo(table) {
  * información de la tabla.
  * Posibilidad de hacerla dinámica pasándo como parámetro la consulta a realizar.
  */
-async function ConsultaDelSol() {
+function ConsultaDelSol() {
     let api = "https://api.sdelsol.com/admin/LanzarConsulta";
-    let infoConsulta = {
-        'ejercicio':"2022", 
-        'consulta':"SELECT *"
-    };
-    await fetch(api, {
+    let token = "Bearer " + verificacionConexionDelSol;
+    fetch(api, {
         method:'POST',
         headers: {
-            'Bearer': verificacionConexionDelSol,
-            Accept: 'application.json',
-            'Content-Type': 'application/json'
+            Authorization: token,
+            "Content-Type": "application/json"
         },
-        body: JSON.stringify(infoConsulta),
+        body: JSON.stringify({
+            "ejercicio":"2022", 
+            "consulta":"SELECT *"
+        }),
     })
     .then((e) => e.json())
     .then((data) => {
         respuestaConsulta = data.resultado;
-        console.log(data.resultado);
-        console.log(respuestaConsulta);
+        console.log(token);
+        console.log(data);
     })
     .catch((err) => 'El error es: ' + console.log(err));
 }
+
 
 /**
  * Coge los datos de la tabla en la que se encuentra, crea los cursores que vigilan
@@ -86,38 +89,43 @@ function Seleccionado() {
     //  Sistema de detección de nuevas filas.
     if (numRecords < records.length && numRecords != 0) {
         console.log("nueva fila");
+        interruptorEnvio = true;
         numRecords = records.length; 
     }else if(numRecords == 0){
         numRecords = records.length; 
     }
     VisualizarUltimo(table);
     
+    if (interruptorEnvio == true && datosEnviar.getCellValue("fldv2BGMaiI6phBzO") == true) {
     /*
         Conexión a DelSol a través de las claves que nos han mandado.
         Dentro de la propia promesa ejecutaremos el resto de consultas,
         de esa forma mantenemos la información sobre el token de acceso.
     */
-    let apiConexion = "https://api.sdelsol.com/login/Autenticar";
-    let infoDelSol = {
-        'codigoFabricante':"378", 
-        'codigoCliente':"99973", 
-        'baseDatosCliente':"FS378", 
-        'password':btoa("x9ZqMmrMivIh")
-    };
-    fetch(apiConexion, {
-        method:'POST',
-        headers: {
-            Accept: 'application.json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(infoDelSol),
-    })
-    .then((e) => e.json())
-    .then(async(data) => {
-        verificacionConexionDelSol = data.resultado;
-        await ConsultaDelSol();
-    })
-    .catch((err) => 'El error es: ' + console.log(err));
+        let apiConexion = "https://api.sdelsol.com/login/Autenticar";
+        let infoDelSol = {
+            'codigoFabricante':"378", 
+            'codigoCliente':"99973", 
+            'baseDatosCliente':"FS378", 
+            'password':btoa("x9ZqMmrMivIh")
+        };
+        fetch(apiConexion, {
+            method:'POST',
+            headers: {
+                Accept: 'application.json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(infoDelSol),
+        })
+        .then((e) => e.json())
+        .then(async(data) => {
+            verificacionConexionDelSol = data.resultado;
+            ConsultaDelSol();
+        })
+        .catch((err) => 'El error es: ' + console.log(err));
+        interruptorEnvio = false;
+    }
+    
     
     //  Prevención de errores => Sólo se selecciona una celda.
     if (cursor.selectedRecordIds.length ==  0 || cursor.selectedFieldIds.length == 0) {
