@@ -3,9 +3,13 @@ import React from 'react';
 
 // Definimos "indice" de forma global para interactuar con ella en ambas funciones.
 // "datosEnviar" es la variable donde guardamos el último record que ha sido modificado.
+// "verificacionConexionDelSol" guardará el token de acceso a la API para las consultas.
+// "respuestaConsulta" guarda la información de retorno de las consultas que ejecutamos a la API.
+// "numRecords" se encarga de verificar junto con el length de records que se ha añadido una fila.
 let indice = 0;     
 let datosEnviar = "";
-let avisado;
+let verificacionConexionDelSol = null;
+let respuestaConsulta = null;
 let numRecords = 0;
 
 /**
@@ -19,6 +23,7 @@ function SituarRecord(idRecord, records) {
     let filaEncontrada = records.findIndex(record => record.id == idRecord);
     indice = filaEncontrada;
 }
+
 /**
  * A través de la información de la tabla que le facilitamos (paso necesario para no
  * cargar más hooks unas veces que otras y de error), y combinado con la fecha de modificación,
@@ -27,9 +32,39 @@ function SituarRecord(idRecord, records) {
  */
 function VisualizarUltimo(table) {
     let ultimosRecords = useRecords(table, {sorts: [
-        {field: 'Last Modified', direction: 'desc', limit: 1}
+        {field: 'Last Modified', direction: 'desc'}
      ]});
     datosEnviar = ultimosRecords[0];
+}
+
+/**
+ * Consulta de prueba que realizamos para verificar que podemos ejecutar órdenes
+ * en la API de DelSol. De momento incluye un POST que recoge toda la 
+ * información de la tabla.
+ * Posibilidad de hacerla dinámica pasándo como parámetro la consulta a realizar.
+ */
+async function ConsultaDelSol() {
+    let api = "https://api.sdelsol.com/admin/LanzarConsulta";
+    let infoConsulta = {
+        'ejercicio':"2022", 
+        'consulta':"SELECT *"
+    };
+    await fetch(api, {
+        method:'POST',
+        headers: {
+            'Bearer': verificacionConexionDelSol,
+            Accept: 'application.json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(infoConsulta),
+    })
+    .then((e) => e.json())
+    .then((data) => {
+        respuestaConsulta = data.resultado;
+        console.log(data.resultado);
+        console.log(respuestaConsulta);
+    })
+    .catch((err) => 'El error es: ' + console.log(err));
 }
 
 /**
@@ -43,81 +78,47 @@ function Seleccionado() {
     let base = useBase();
     let table = base.tables[0];
     let records = useRecords(table);
-    //  Variables de fecha para hallar el último modificado y comparar.
-    const fecha = new Date();
-    const hoy = new Date(fecha);
     //  Puesta a punto de cursores y hooks para situarte.
     const cursor = useCursor();
     useLoadable(cursor);
     useWatchable(cursor, ['selectedFieldIds', 'selectedRecordIds']);
     SituarRecord(cursor.selectedRecordIds, records);
+    //  Sistema de detección de nuevas filas.
+    if (numRecords < records.length && numRecords != 0) {
+        console.log("nueva fila");
+        numRecords = records.length; 
+    }else if(numRecords == 0){
+        numRecords = records.length; 
+    }
     VisualizarUltimo(table);
-    //console.log(datosEnviar.getCellValue("fldMt4ueHXyUpgMBN").substring(0, datosEnviar.getCellValue("fldMt4ueHXyUpgMBN").length - 7));
-    //console.log(hoy.toISOString().substring(0, hoy.toISOString().length - 7));
-
-    //  Si el minuto de modificación es el mismo, se activa.
-    /*if (datosEnviar.getCellValue("fldMt4ueHXyUpgMBN").substring(0, datosEnviar.getCellValue("fldMt4ueHXyUpgMBN").length - 7) == hoy.toISOString().substring(0, hoy.toISOString().length - 7) && avisado == undefined) {
-        alert("funciona");
-        avisado = true;
-    }
-    if (datosEnviar.getCellValue("fldMt4ueHXyUpgMBN").substring(0, datosEnviar.getCellValue("fldMt4ueHXyUpgMBN").length - 7) != hoy.toISOString().substring(0, hoy.toISOString().length - 7) && avisado != undefined) {
-        alert("reset");
-        avisado = undefined;
-    }*/
-    console.log(numRecords);
-    console.log(records.length);
-
-    if (numRecords < records.length) {
-        console.log("nueva fila");
-        numRecords = records.length;
-        /*
-        Hola Asier así creo que esta bien, solo cuando se crea una nueva fila ya sea por 
-        la tabla o por el formulario aparece nueva fila. Por otro lado cuando te mueves por 
-        las celdas de la tabla vuelve aparecer el numero 2 veces por que cada vez que te pones encima 
-        de una celda vuelve a leer todo el código y vuelve a leer los dos console.log 
-        de fuera del scope.
-
-        El problema era lo del bucle que te dije que se estaba realimentando, a parte, estabas 
-        jugando con el método undefined como valor de inicio y eso no es recomendable, para evitar
-        eso lo he inicializado con un 0. 
-
-        Te dejo el código tuyo abajo por si quieres echarle un ojo. 
-        */
-    }
-
-
-    /*if (numRecords != undefined && numRecords < records.length) {
-        console.log("nueva fila");
-        numRecords = records.length;
-
-    }else if (numRecords == undefined) {
-        numRecords = records.length;
-
-    }else if (numRecords >= records.length) {
-        numRecords = undefined;
-    }*/
-
-
-
-    //  Se obtienen los datos de la API y se vuelcan en "datosApi"
-    let api = "https://rest.reviso.com/customers";
-    let datosApi = [];
-    fetch(api, {
-        method:'GET',
+    
+    /*
+        Conexión a DelSol a través de las claves que nos han mandado.
+        Dentro de la propia promesa ejecutaremos el resto de consultas,
+        de esa forma mantenemos la información sobre el token de acceso.
+    */
+    let apiConexion = "https://api.sdelsol.com/login/Autenticar";
+    let infoDelSol = {
+        'codigoFabricante':"378", 
+        'codigoCliente':"99973", 
+        'baseDatosCliente':"FS378", 
+        'password':btoa("x9ZqMmrMivIh")
+    };
+    fetch(apiConexion, {
+        method:'POST',
         headers: {
-            'X-AppSecretToken':'demo',
-            'X-AgreementGrantToken': 'demo',
+            Accept: 'application.json',
             'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify(infoDelSol),
     })
     .then((e) => e.json())
-    .then((data) => {
-        for (let i = 0; i < data["collection"].length; i++) {
-            datosApi[i] = data["collection"][i];
-        }
+    .then(async(data) => {
+        verificacionConexionDelSol = data.resultado;
+        await ConsultaDelSol();
     })
     .catch((err) => 'El error es: ' + console.log(err));
-
+    
     //  Prevención de errores => Sólo se selecciona una celda.
     if (cursor.selectedRecordIds.length ==  0 || cursor.selectedFieldIds.length == 0) {
         return <span>No hay valores seleccionados</span>
